@@ -20,7 +20,6 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
 from . import RinnaiConfigEntry
 from .entity import RinnaiEntity
 
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
 
 # Limit concurrent updates per platform
 PARALLEL_UPDATES = 1
+ERROR_NO_ERROR_KEY = "no_error"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -196,7 +196,16 @@ SENSOR_DESCRIPTIONS: tuple[RinnaiSensorEntityDescription, ...] = (
         key="error_code",
         translation_key="error_code",
         icon="mdi:alert-circle-outline",
-        # Diagnostic raw field from local raw_data (string)
+        # Diagnostic field from local raw_data
+        value_fn=lambda device: device.error_code,
+        round_digits=0,
+        is_diagnostic=True,
+        disabled_by_default=True,
+    ),
+    RinnaiSensorEntityDescription(
+        key="error_description",
+        translation_key="error_description",
+        icon="mdi:alert-circle-outline",
         value_fn=lambda device: device.error_code,
         is_diagnostic=True,
         disabled_by_default=True,
@@ -245,15 +254,32 @@ class RinnaiSensor(RinnaiEntity, SensorEntity):
         if description.disabled_by_default:
             self._attr_entity_registry_enabled_default = False
 
+        # Keep error fields named without device prefix
+        if description.key in {"error_code", "error_description"}:
+            self._attr_has_entity_name = False
+
     @property
     def native_value(self) -> float | str | None:
         """Return the sensor value."""
+        if self.entity_description.key == "error_description":
+            code = self._device.error_code
+            if code is None:
+                return ERROR_NO_ERROR_KEY
+            return code
+        if self.entity_description.key == "error_code":
+            code = self._device.error_code
+            if code is None:
+                return ERROR_NO_ERROR_KEY
+            return code
+
         value = self.entity_description.value_fn(self._device)
         if value is None:
             return None
         # If numeric, apply multiplier and rounding
         if isinstance(value, (int, float)):
             adjusted_value = value * self.entity_description.value_multiplier
+            if self.entity_description.round_digits == 0:
+                return int(round(adjusted_value))
             return round(adjusted_value, self.entity_description.round_digits)
 
         # Otherwise return raw value (e.g., strings for diagnostic fields)

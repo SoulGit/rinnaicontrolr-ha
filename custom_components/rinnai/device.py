@@ -795,7 +795,7 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     @property
     def error_code(self) -> str | None:
-        """Return the raw error code string from device data.
+        """Return the error code from device data.
 
         This reads from local raw data under the key `error_code`, and
         falls back to the cloud path if available.
@@ -804,7 +804,18 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             ("data", "getDevice", "info", "error_code"),
             "error_code",
         )
-        return str(val) if val is not None else None
+        if val is None:
+            return None
+        if isinstance(val, int):
+            return str(val)
+        if isinstance(val, str):
+            cleaned = val.strip()
+            if not cleaned:
+                return None
+            if cleaned.isdigit():
+                return str(int(cleaned))
+            return cleaned.upper()
+        return str(val)
 
     # =========================================================================
     # Actions - Route to appropriate backend based on connection mode
