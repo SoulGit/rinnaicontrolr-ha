@@ -210,6 +210,9 @@
             },
             "exhaust_temperature": {
                 "name": "Exhaust Temperature"
+            },
+            "error_code": {
+                "name": "Error Code"
             }
         }
     },

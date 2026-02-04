@@ -793,6 +793,19 @@ class RinnaiDeviceDataUpdateCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         return float(temp) if temp is not None else None
 
+    @property
+    def error_code(self) -> str | None:
+        """Return the raw error code string from device data.
+
+        This reads from local raw data under the key `error_code`, and
+        falls back to the cloud path if available.
+        """
+        val = self._get_value(
+            ("data", "getDevice", "info", "error_code"),
+            "error_code",
+        )
+        return str(val) if val is not None else None
+
     # =========================================================================
     # Actions - Route to appropriate backend based on connection mode
     # =========================================================================
