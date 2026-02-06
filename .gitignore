@@ -69,3 +69,6 @@ CLAUDE.md
 
 # Documentation (generated locally, used for PR descriptions)
 CHANGELOG.md
+
+# Editor/extension generated
+components/
